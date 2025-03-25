@@ -6,10 +6,11 @@ import backgroundImage from './assets/ValsoftBackgroundImage.jpg';
 
 import WebsiteScraper from './components/WebsiteScraper';
 import ReportGenerator from './components/ReportGenerator';
+import ReportDisplay from './components/ReportDisplay';
 import VerticalMarketCheck from './components/VerticalMarketCheck';
 import { api } from './services';
 
-const steps = ['Website Scraping', 'Report Generation', 'Vertical Market Check'];
+const steps = ['Website Scraping', 'Report Generation', 'Report Display', 'Vertical Market Check'];
 
 const theme = createTheme({
   palette: {
@@ -173,30 +174,90 @@ function App() {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
+  const handleNewAnalysis = () => {
+    // Reset all states
+    setActiveStep(0);
+    setScrapedContent('');
+    setReport(null);
+    setUrl('');
+    setMaxPages('');
+    setLoading(false);
+    setError(null);
+  };
+
   const handleStartAnalysis = async () => {
+    console.log('🚀 Start Analysis clicked');
     if (!url) {
-      setActiveStep(0);
-      document.querySelector('.analysis-form')?.scrollIntoView({ behavior: 'smooth' });
+      console.log('⚠️ No URL provided');
+      setError('Please enter a website URL to analyze');
+      setLoading(false);
       return;
     }
 
+    // Format the URL if needed
+    let formattedUrl = url.trim();
+    if (!formattedUrl.match(/^https?:\/\//)) {
+      formattedUrl = 'https://' + formattedUrl;
+      console.log('🔧 Added https:// prefix to URL:', formattedUrl);
+    }
+
+    console.log('📊 Analysis parameters:', { url: formattedUrl, maxPages });
     setError(null);
     setLoading(true);
 
     try {
-      await api.scrapeWebsite({
-        url,
+      console.log('📤 Sending scrape request to backend');
+      const scrapeResult = await api.scrapeWebsite({
+        url: formattedUrl,
         max_pages: maxPages || undefined,
-        force_crawl: false
+        force_crawl: true  // Force a fresh crawl
       });
+      console.log('✅ Scrape request successful with result:', scrapeResult);
 
-      const loadedContent = await api.loadScrapedContent(maxPages || undefined);
-      setScrapedContent(JSON.stringify(loadedContent));
+      // Check if we got valid content
+      if (!scrapeResult || !scrapeResult.content) {
+        console.warn('⚠️ No content was returned from scraping');
+        setScrapedContent("");
+        setError("No content was loaded from the website.");
+        setLoading(false);
+        return;
+      }
+
+      // Extract content from the response
+      if (typeof scrapeResult.content === 'string') {
+        console.log('📋 Using scraped content:', scrapeResult.content.substring(0, 100) + '...');
+        setScrapedContent(scrapeResult.content);
+      } else {
+        console.log('📋 Converting scraped content to string');
+        setScrapedContent(JSON.stringify(scrapeResult.content));
+      }
+
+      console.log('⏭️ Moving to next step with content extracted');
       handleNext();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while scraping the website');
+      console.error('❌ Error during analysis:', err);
+      
+      // Extract a more user-friendly error message
+      let errorMessage = 'An error occurred while scraping the website';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Add network-specific error information
+        if (errorMessage.includes('Network Error')) {
+          errorMessage = 'Network error: Unable to connect to the backend server. Please ensure the server is running and accessible.';
+        }
+        
+        // Handle timeout errors
+        if (errorMessage.includes('timeout')) {
+          errorMessage = 'Request timed out: The server took too long to respond. This might be due to the complexity of the website being analyzed.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      console.log('🏁 Analysis process completed (success or failure)');
     }
   };
 
@@ -227,9 +288,18 @@ function App() {
         );
       case 2:
         return (
+          <ReportDisplay 
+            report={report}
+            onBack={handleBack}
+            onContinue={handleNext}
+          />
+        );
+      case 3:
+        return (
           <VerticalMarketCheck 
             report={report}
             onBack={handleBack}
+            onNewAnalysis={handleNewAnalysis}
           />
         );
       default:

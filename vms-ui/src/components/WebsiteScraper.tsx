@@ -21,7 +21,13 @@ export default function WebsiteScraper({
 }: WebsiteScraperProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit();
+    console.log('📝 Form submitted with:', { url, maxPages });
+    try {
+      await onSubmit();
+      console.log('✅ Form submission completed successfully');
+    } catch (error) {
+      console.error('❌ Form submission failed:', error);
+    }
   };
 
   return (
