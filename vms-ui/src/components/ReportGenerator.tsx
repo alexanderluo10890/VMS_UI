@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Button, CircularProgress, Alert, Typography } from '@mui/material';
 import { api } from '../services/api';
 
@@ -8,9 +8,27 @@ interface ReportGeneratorProps {
   onBack: () => void;
 }
 
+const LOADING_MESSAGES = [
+  'Analyzing scraped content...',
+  'Identifying key business details...',
+  'Building your report...',
+  'Applying AI analysis...',
+  'Almost done...',
+];
+
 export default function ReportGenerator({ scrapedContent, onComplete, onBack }: ReportGeneratorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) return;
+    setMsgIndex(0);
+    const interval = setInterval(() => {
+      setMsgIndex(i => Math.min(i + 1, LOADING_MESSAGES.length - 1));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleGenerateReport = async () => {
     console.log('🔍 Starting report generation with scraped content');
@@ -152,38 +170,41 @@ export default function ReportGenerator({ scrapedContent, onComplete, onBack }: 
         Scraped content is ready for analysis. Click the button below to generate a business report.
       </Typography>
 
-      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-        <Button
-          onClick={onBack}
-          disabled={loading}
-        >
-          Back
-        </Button>
-        
-        <Button
-          variant="contained"
-          onClick={handleGenerateReport}
-          disabled={loading}
-          sx={{ position: 'relative' }}
-        >
-          {loading ? (
-            <>
-              Generating Report...
-              <CircularProgress
-                size={24}
-                sx={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  marginTop: '-12px',
-                  marginLeft: '-12px',
-                }}
-              />
-            </>
-          ) : (
-            'Generate Report'
-          )}
-        </Button>
+      <Box sx={{ mt: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button onClick={onBack} disabled={loading}>
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleGenerateReport}
+            disabled={loading}
+            sx={{ position: 'relative' }}
+          >
+            {loading ? (
+              <>
+                Generating Report...
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    marginTop: '-12px',
+                    marginLeft: '-12px',
+                  }}
+                />
+              </>
+            ) : (
+              'Generate Report'
+            )}
+          </Button>
+        </Box>
+        {loading && (
+          <Typography variant="body2" sx={{ textAlign: 'center', color: '#4169E1', mt: 2, fontStyle: 'italic' }}>
+            {LOADING_MESSAGES[msgIndex]}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

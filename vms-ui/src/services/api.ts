@@ -10,10 +10,10 @@ const axiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 60000,
+  timeout: 180000,
   validateStatus: function (status) {
     console.log('🔍 Received response with status:', status);
-    return true;
+    return status >= 200 && status < 300; // Only accept 2xx status codes
   },
 });
 
@@ -120,11 +120,13 @@ interface WebsiteRequest {
 interface ReportGenerationRequest {
   pages_text: string;
   retries?: number;
+  url?: string;
 }
 
 interface VerticalMarketCheckRequest {
   report_text: string;
   retries?: number;
+  url?: string;
 }
 
 interface Api {
@@ -146,7 +148,13 @@ export const api: Api = {
       console.log('🚀 Sending scraping request with data:', data);
       
       try {
-        const response = await axiosInstance.post('/api/scrape/scrape', data);
+        const response = await axiosInstance.post('/api/scrape/scrape', data, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          maxRedirects: 0, // Prevent redirects
+        });
         console.log('✅ Website scraping completed successfully with status:', response.status);
         
         if (!response.data) {

@@ -5,19 +5,21 @@ export interface WebsiteScraperProps {
   maxPages: number | '';
   loading: boolean;
   error: string | null;
+  statusMessage?: string;
   onUrlChange: (newUrl: string) => void;
   onMaxPagesChange: (newMaxPages: number | '') => void;
   onSubmit: () => Promise<void>;
 }
 
-export default function WebsiteScraper({ 
-  url, 
-  maxPages, 
-  loading, 
-  error, 
-  onUrlChange, 
-  onMaxPagesChange, 
-  onSubmit 
+export default function WebsiteScraper({
+  url,
+  maxPages,
+  loading,
+  error,
+  statusMessage,
+  onUrlChange,
+  onMaxPagesChange,
+  onSubmit
 }: WebsiteScraperProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +123,7 @@ export default function WebsiteScraper({
         }}
       />
 
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
         <Button
           type="submit"
           variant="contained"
@@ -158,6 +160,14 @@ export default function WebsiteScraper({
             'Start Analysis'
           )}
         </Button>
+        {loading && statusMessage && (
+          <Typography
+            variant="body2"
+            sx={{ textAlign: 'center', color: '#4169E1', fontStyle: 'italic' }}
+          >
+            {statusMessage}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

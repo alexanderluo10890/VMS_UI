@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Container, Box, Paper, Stepper, Step, StepLabel, Typography, AppBar, Toolbar, Button, CircularProgress } from '@mui/material';
+import { useState, useRef, useEffect } from 'react';
+import { Container, Box, Paper, Stepper, Step, StepLabel, Typography, AppBar, Toolbar, Button } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import backgroundImage from './assets/ValsoftBackgroundImage.jpg';
@@ -10,7 +10,7 @@ import ReportDisplay from './components/ReportDisplay';
 import VerticalMarketCheck from './components/VerticalMarketCheck';
 import { api } from './services';
 
-const steps = ['Website Scraping', 'Report Generation', 'Report Display', 'Vertical Market Check'];
+const steps = ['Scrape', 'Generate', 'Report', 'VMS Check'];
 
 const theme = createTheme({
   palette: {
@@ -165,6 +165,12 @@ function App() {
   const [maxPages, setMaxPages] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [activeStep]);
 
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
@@ -204,6 +210,7 @@ function App() {
     console.log('📊 Analysis parameters:', { url: formattedUrl, maxPages });
     setError(null);
     setLoading(true);
+    setStatusMessage('Scraping website pages, this may take a minute...');
 
     try {
       console.log('📤 Sending scrape request to backend');
@@ -257,6 +264,7 @@ function App() {
       setError(errorMessage);
     } finally {
       setLoading(false);
+      setStatusMessage('');
       console.log('🏁 Analysis process completed (success or failure)');
     }
   };
@@ -265,11 +273,12 @@ function App() {
     switch (step) {
       case 0:
         return (
-          <WebsiteScraper 
+          <WebsiteScraper
             url={url}
             maxPages={maxPages}
             loading={loading}
             error={error}
+            statusMessage={statusMessage}
             onUrlChange={setUrl}
             onMaxPagesChange={setMaxPages}
             onSubmit={handleStartAnalysis}
@@ -329,72 +338,34 @@ function App() {
           </Toolbar>
         </AppBar>
 
-        <Container maxWidth="lg">
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            minHeight: '80vh',
+        <Container maxWidth="md">
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
             py: 8,
-            gap: 8,
+            gap: 4,
           }}>
-            <Box sx={{ flex: 1, pr: 4 }}>
+            {/* Hero */}
+            <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h1" component="h1" gutterBottom>
                 Website Analysis Made Simple
               </Typography>
-              <Typography 
-                variant="body1" 
-                paragraph 
-                sx={{ 
-                  fontSize: '1.2rem', 
-                  mb: 4,
-                  color: 'rgba(255, 255, 255, 0.8)',
-                }}
+              <Typography
+                variant="body1"
+                sx={{ fontSize: '1.2rem', color: 'rgba(255, 255, 255, 0.8)' }}
               >
                 Analyze any website's market position and generate comprehensive reports with our advanced AI-powered tools.
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button 
-                  variant="contained" 
-                  color="secondary" 
-                  size="large"
-                  onClick={handleStartAnalysis}
-                  disabled={loading || !url}
-                  sx={{ 
-                    position: 'relative',
-                    minWidth: 160,
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      Analyzing...
-                      <CircularProgress
-                        size={24}
-                        sx={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          marginTop: '-12px',
-                          marginLeft: '-12px',
-                          color: 'inherit'
-                        }}
-                      />
-                    </>
-                  ) : (
-                    'Start Analysis'
-                  )}
-                </Button>
-                <Button variant="outlined" size="large">
-                  Learn More
-                </Button>
-              </Box>
             </Box>
-            
-            <Box sx={{ flex: 1 }} className="analysis-form">
-              <Paper 
-                elevation={24} 
-                sx={{ 
-                  p: 4, 
-                  borderRadius: 4, 
+
+            {/* Card */}
+            <Box ref={cardRef} sx={{ width: '100%' }}>
+              <Paper
+                elevation={24}
+                sx={{
+                  p: 4,
+                  borderRadius: 4,
                   bgcolor: 'background.paper',
                   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
                   display: 'flex',
@@ -405,10 +376,10 @@ function App() {
                 <Typography variant="h4" align="center" gutterBottom>
                   Website Analysis
                 </Typography>
-                <Stepper 
-                  activeStep={activeStep} 
-                  sx={{ 
-                    pt: 3, 
+                <Stepper
+                  activeStep={activeStep}
+                  sx={{
+                    pt: 3,
                     pb: 5,
                     '& .MuiStepConnector-line': {
                       borderColor: 'rgba(27, 43, 75, 0.2)',
